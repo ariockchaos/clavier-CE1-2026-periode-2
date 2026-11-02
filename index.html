@@ -358,10 +358,12 @@
                     <option value="4">Liste 4 - Les émotions (1)</option>
                     <option value="5">Liste 5 - Les émotions (2)</option>
                     <option value="6">Liste 6 - Bilan émotions</option>
+                    <option value="7">Liste 7 - Mots invariables (Pas touche !)</option>
                 </select>
             </div>
             <div class="score-box">
                 <span>Mots réussis : <span id="score-count" style="color:var(--neon-green);">0</span></span>
+                <span>Erreurs : <span id="error-count" style="color:var(--neon-red);">0</span></span>
                 <span class="stars" id="star-display">⭐⭐⭐</span>
             </div>
         </div>
@@ -370,46 +372,52 @@
             <p class="target-title">Tape le mot suivant au clavier :</p>
             <div id="target-display" class="target-word-display"></div>
             <div id="feedback" class="feedback-message">Regarde les touches illuminées !</div>
-            <div class="action-btns">
-                <button id="skip-btn" class="btn">Passer le mot ➔</button>
-            </div>
         </div>
 
         <div class="keyboard-wrapper" id="keyboard"></div>
     </div>
 
     <script>
-        // Mots de la Période 2 (Listes 1 à 6)
+        // Mots de la Période 2 (Listes 1 à 6) avec mots invariables inclus + Liste 7 (que mots invariables)
         const wordsByWeek = {
             "1": [
                 "mon anniversaire", "son anniversaire", "un gâteau", "des gâteaux", 
                 "mes amis", "ses amis", "des amis", "je fête", "il fête", 
-                "nous fêtons", "elle mange", "nous mangeons", "ils mangent"
+                "nous fêtons", "elle mange", "nous mangeons", "ils mangent",
+                "toujours", "jamais", "souvent"
             ],
             "2": [
                 "une bougie", "des bougies", "un cadeau", "des cadeaux", 
                 "je souffle", "il souffle", "nous soufflons", "je donne", 
-                "il donne", "ils donnent", "joyeux", "joyeuse"
+                "il donne", "ils donnent", "joyeux", "joyeuse",
+                "toujours", "jamais", "souvent"
             ],
             "3": [
                 "la famille", "une invitation", "tu fêtais", "il fêtait", 
                 "nous fêtions", "ils fêtaient", "tu invitais", "elle invitait", 
-                "ils invitaient", "tu envoyais", "elle envoyait", "nous envoyions", "ils envoyaient"
+                "ils invitaient", "tu envoyais", "elle envoyait", "nous envoyions", "ils envoyaient",
+                "toujours", "jamais", "souvent"
             ],
             "4": [
                 "la joie", "la peur", "la colère", "le sport", "mon équipe", 
                 "ton équipe", "notre équipe", "j'aimais", "tu aimais", 
-                "nous aimions", "je pleurais", "tu pleurais", "nous pleurions"
+                "nous aimions", "je pleurais", "tu pleurais", "nous pleurions",
+                "toujours", "jamais", "souvent"
             ],
             "5": [
                 "le loup", "les loups", "les enfants", "surpris", "fort", 
                 "tu semblais", "nous semblions", "vous sembliez", "ils semblaient", 
-                "tu entendais", "nous entendions", "vous entendiez", "ils entendaient"
+                "tu entendais", "nous entendions", "vous entendiez", "ils entendaient",
+                "toujours", "jamais", "souvent"
             ],
             "6": [
                 "la joie", "la peur", "la colère", "la frayeur", "les émotions", 
                 "agréable", "désagréable", "forte", "tu exprimes", "il exprime", 
-                "nous exprimons", "vous exprimez"
+                "nous exprimons", "vous exprimez",
+                "toujours", "jamais", "souvent"
+            ],
+            "7": [
+                "toujours", "jamais", "souvent"
             ]
         };
 
@@ -508,6 +516,7 @@
         let currentWord = "";
         let charIndex = 0;
         let score = 0;
+        let errors = 0;
 
         // Audio Synth
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -550,9 +559,6 @@
                     if (k.gr) el.innerHTML += `<span class="key-gr">${k.gr}</span>`;
                     el.innerHTML += `<span class="key-main">${k.m}</span>`;
                     
-                    // Supression du clic / tap tactile pour forcer l'utilisation du clavier physique
-                    // Les touches ne réagissent plus au clic de la souris
-                    
                     rowEl.appendChild(el);
                 });
                 kb.appendChild(rowEl);
@@ -563,18 +569,28 @@
         function loadWeekList(week) {
             currentWeek = week;
             currentWordList = [...wordsByWeek[week]];
-            // Mélanger les mots
+            // Mélanger les mots de la liste sans répétition
             currentWordList.sort(() => Math.random() - 0.5);
             wordIndex = 0;
+            score = 0;
+            errors = 0;
+            document.getElementById('score-count').textContent = score;
+            document.getElementById('error-count').textContent = errors;
             loadNextWord();
         }
 
         // Charger le mot suivant
         function loadNextWord() {
             if (wordIndex >= currentWordList.length) {
-                // Mélanger à nouveau
-                currentWordList.sort(() => Math.random() - 0.5);
-                wordIndex = 0;
+                // Tous les mots de la liste ont été faits
+                document.getElementById('target-display').innerHTML = '<span style="color:var(--neon-green)">Bravo ! Liste terminée ! 🌟</span>';
+                document.getElementById('feedback').textContent = "Tu as écrit tous les mots de cette liste !";
+                playSuccessSound();
+                // Effacer la surbrillance des touches
+                document.querySelectorAll('.key').forEach(el => {
+                    el.classList.remove('key-target', 'key-shift-required');
+                });
+                return;
             }
             currentWord = currentWordList[wordIndex];
             charIndex = 0;
@@ -592,7 +608,6 @@
                 const span = document.createElement('span');
                 span.className = 'char-letter';
                 
-                // Remplacer les espaces par un symbole plus visible
                 let charToShow = currentWord[i];
                 if (charToShow === ' ') charToShow = '␣';
 
@@ -610,7 +625,7 @@
 
         // Traitement de la touche tapée
         function processInput(char) {
-            if (charIndex >= currentWord.length) return;
+            if (wordIndex >= currentWordList.length || charIndex >= currentWord.length) return;
 
             let expectedChar = currentWord[charIndex];
 
@@ -628,14 +643,13 @@
                 // Touche accent circonflexe pressée sur le clavier physique
                 window.pendingAccent = '^';
                 playSound(400, 'sine', 0.05);
-                // Éteindre immédiatement le chapeau et allumer la lettre
                 highlightTargetKey();
                 return;
             }
 
             if (char === expectedChar) {
                 // Correct !
-                playSound(587.33, 'sine', 0.08); // Note aigue
+                playSound(587.33, 'sine', 0.08);
                 charIndex++;
                 updateWordDisplay();
 
@@ -650,15 +664,16 @@
                         document.getElementById('feedback').textContent = "Regarde les touches illuminées !";
                         wordIndex++;
                         loadNextWord();
-                    }, 1000);
+                    }, 800);
                 } else {
                     highlightTargetKey();
                 }
             } else {
                 // Erreur
+                errors++;
+                document.getElementById('error-count').textContent = errors;
                 playSound(150, 'sawtooth', 0.15);
                 document.getElementById('feedback').textContent = "Oups ! Essaie encore !";
-                // En cas d'erreur lors d'une combinaison d'accent, réinitialiser
                 window.pendingAccent = null;
                 highlightTargetKey();
             }
@@ -810,12 +825,6 @@
             const weekSelect = document.getElementById('week-select');
             weekSelect.addEventListener('change', (e) => {
                 loadWeekList(e.target.value);
-            });
-
-            // Bouton passer
-            document.getElementById('skip-btn').addEventListener('click', () => {
-                wordIndex++;
-                loadNextWord();
             });
 
             // Charger la semaine 1 par défaut
