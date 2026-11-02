@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Clavier Interactif - CE1 Période 2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #080a15;
+            --panel-bg: rgba(22, 27, 46, 0.95);
+            --text-color: #ffffff;
+            --neon-pink: #ff007f;
+            --neon-blue: #00f0ff;
+            --neon-green: #39ff14;
+            --neon-yellow: #ffe600;
+            --neon-orange: #ffaa00;
+            --neon-red: #ff3344;
+            --key-bg: #161b33;
+            --key-border: #2d3766;
+            --font-family: 'Outfit', sans-serif;
+            --border-radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        #starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(ellipse at bottom, #111827 0%, #030712 100%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        h1 {
+            font-size: clamp(1.3rem, 4vw, 2rem);
+            margin: 0;
+            background: linear-gradient(90deg, var(--neon-red), var(--neon-orange), var(--neon-yellow), var(--neon-green), var(--neon-blue), var(--neon-pink));
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: rainbow-text 8s linear infinite;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 800;
+        }
+
+        @keyframes rainbow-text {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 300% 50%; }
+        }
+
+        /* --- SÉLECTEUR DE LISTES --- */
+        .controls-panel {
+            background: var(--panel-bg);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: var(--border-radius);
+            padding: 10px 15px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .select-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+
+        select {
+            background: #0f1322;
+            color: var(--neon-blue);
+            border: 1px solid var(--neon-blue);
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-family: var(--font-family);
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .score-box {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .stars {
+            color: var(--neon-yellow);
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+        }
+
+        /* --- ZONE D'EXERCICE --- */
+        .exercise-card {
+            background: var(--panel-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .target-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #94a3b8;
+            margin: 0;
+        }
+
+        .target-word-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: clamp(1.6rem, 5vw, 2.4rem);
+            letter-spacing: 3px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            width: 100%;
+            min-height: 65px;
+            align-items: center;
+        }
+
+        .char-letter {
+            padding: 2px 4px;
+            border-radius: 4px;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+
+        .char-typed {
+            color: var(--neon-green);
+            text-shadow: 0 0 8px var(--neon-green);
+        }
+
+        .char-current {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.15);
+            border-bottom: 3px solid var(--neon-yellow);
+            animation: pulse-char 1s infinite alternate;
+        }
+
+        @keyframes pulse-char {
+            0% { border-color: var(--neon-yellow); box-shadow: 0 0 5px var(--neon-yellow); }
+            100% { border-color: var(--neon-pink); box-shadow: 0 0 12px var(--neon-pink); }
+        }
+
+        .feedback-message {
+            min-height: 24px;
+            font-weight: bold;
+            font-size: 1rem;
+            color: var(--neon-green);
+        }
+
+        /* --- CLAVIER --- */
+        .keyboard-wrapper {
+            width: 100%;
+            background: var(--panel-bg);
+            padding: 10px;
+            border-radius: var(--border-radius);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .key-row {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            gap: 4px;
+        }
+
+        .key {
+            background: var(--key-bg);
+            border: 1px solid var(--key-border);
+            border-bottom: 3px solid #0a0d1a;
+            border-radius: 6px;
+            flex: 1;
+            height: clamp(38px, 5.5vw, 52px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(0.7rem, 1.6vw, 0.95rem);
+            color: #cbd5e1;
+            position: relative;
+            user-select: none;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .key.small { flex: 0.7; font-size: 0.7rem; }
+        .key.wide { flex: 1.5; }
+        .key.extra-wide { flex: 2; }
+        .key.space { flex: 6; }
+
+        /* Touche active (pressée) */
+        .key.key-pressed {
+            background: var(--neon-blue) !important;
+            color: #000 !important;
+            transform: translateY(2px);
+            border-bottom-width: 1px !important;
+            box-shadow: 0 0 12px var(--neon-blue);
+        }
+
+        /* Touche cible à taper (Guide lumineux) */
+        .key.key-target {
+            background: var(--neon-yellow) !important;
+            color: #000 !important;
+            border-color: var(--neon-yellow) !important;
+            box-shadow: 0 0 15px var(--neon-yellow);
+            animation: target-glow 0.8s infinite alternate;
+            font-weight: bold;
+        }
+
+        /* Touche Shift requise */
+        .key.key-shift-required {
+            background: var(--neon-orange) !important;
+            color: #000 !important;
+            border-color: var(--neon-orange) !important;
+            box-shadow: 0 0 15px var(--neon-orange);
+            animation: shift-glow 0.8s infinite alternate;
+            font-weight: bold;
+        }
+
+        @keyframes target-glow {
+            from { box-shadow: 0 0 5px var(--neon-yellow); }
+            to { box-shadow: 0 0 18px var(--neon-yellow); }
+        }
+
+        @keyframes shift-glow {
+            from { box-shadow: 0 0 5px var(--neon-orange); }
+            to { box-shadow: 0 0 18px var(--neon-orange); }
+        }
+
+        .key-top {
+            font-size: clamp(0.5rem, 1vw, 0.65rem);
+            position: absolute;
+            top: 2px;
+            left: 4px;
+            color: var(--neon-orange);
+        }
+
+        .key-gr {
+            font-size: clamp(0.5rem, 1vw, 0.65rem);
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            color: var(--neon-green);
+        }
+
+        .key-main {
+            font-weight: bold;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-family: var(--font-family);
+            font-weight: bold;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .btn:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 12px var(--neon-blue);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="starfield"></canvas>
+    <div class="container">
+        <header>
+            <h1>Clavier CE1 - Période 2</h1>
+        </header>
+
+        <div class="controls-panel">
+            <div class="select-group">
+                <label for="week-select">Liste :</label>
+                <select id="week-select">
+                    <option value="1">Liste 1 - L'anniversaire (1)</option>
+                    <option value="2">Liste 2 - L'anniversaire (2)</option>
+                    <option value="3">Liste 3 - L'anniversaire (imparfait)</option>
+                    <option value="4">Liste 4 - Les émotions (1)</option>
+                    <option value="5">Liste 5 - Les émotions (2)</option>
+                    <option value="6">Liste 6 - Bilan émotions</option>
+                </select>
+            </div>
+            <div class="score-box">
+                <span>Mots réussis : <span id="score-count" style="color:var(--neon-green);">0</span></span>
+                <span class="stars" id="star-display">⭐⭐⭐</span>
+            </div>
+        </div>
+
+        <div class="exercise-card">
+            <p class="target-title">Tape le mot suivant au clavier :</p>
+            <div id="target-display" class="target-word-display"></div>
+            <div id="feedback" class="feedback-message">Regarde les touches illuminées !</div>
+            <div class="action-btns">
+                <button id="skip-btn" class="btn">Passer le mot ➔</button>
+            </div>
+        </div>
+
+        <div class="keyboard-wrapper" id="keyboard"></div>
+    </div>
+
+    <script>
+        // Mots de la Période 2 (Listes 1 à 6)
+        const wordsByWeek = {
+            "1": [
+                "mon anniversaire", "son anniversaire", "un gâteau", "des gâteaux", 
+                "mes amis", "ses amis", "des amis", "je fête", "il fête", 
+                "nous fêtons", "elle mange", "nous mangeons", "ils mangent"
+            ],
+            "2": [
+                "une bougie", "des bougies", "un cadeau", "des cadeaux", 
+                "je souffle", "il souffle", "nous soufflons", "je donne", 
+                "il donne", "ils donnent", "joyeux", "joyeuse"
+            ],
+            "3": [
+                "la famille", "une invitation", "tu fêtais", "il fêtait", 
+                "nous fêtions", "ils fêtaient", "tu invitais", "elle invitait", 
+                "ils invitaient", "tu envoyais", "elle envoyait", "nous envoyions", "ils envoyaient"
+            ],
+            "4": [
+                "la joie", "la peur", "la colère", "le sport", "mon équipe", 
+                "ton équipe", "notre équipe", "j'aimais", "tu aimais", 
+                "nous aimions", "je pleurais", "tu pleurais", "nous pleurions"
+            ],
+            "5": [
+                "le loup", "les loups", "les enfants", "surpris", "fort", 
+                "tu semblais", "nous semblions", "vous sembliez", "ils semblaient", 
+                "tu entendais", "nous entendions", "vous entendiez", "ils entendaient"
+            ],
+            "6": [
+                "la joie", "la peur", "la colère", "la frayeur", "les émotions", 
+                "agréable", "désagréable", "forte", "tu exprimes", "il exprime", 
+                "nous exprimons", "vous exprimez"
+            ]
+        };
+
+        // Disposition Clavier AZERTY avec associations
+        const kbLayout = [
+            [
+                {id:'Escape', m:'Échap', w:'small'},
+                {id:'F1', m:'F1', w:'small'}, {id:'F2', m:'F2', w:'small'}, {id:'F3', m:'F3', w:'small'}, {id:'F4', m:'F4', w:'small'},
+                {id:'F5', m:'F5', w:'small'}, {id:'F6', m:'F6', w:'small'}, {id:'F7', m:'F7', w:'small'}, {id:'F8', m:'F8', w:'small'},
+                {id:'F9', m:'F9', w:'small'}, {id:'F10', m:'F10', w:'small'}, {id:'F11', m:'F11', w:'small'}, {id:'F12', m:'F12', w:'small'},
+                {id:'Delete', m:'Suppr', w:'small'}
+            ],
+            [
+                {id:'Backquote', t:'²', m:'~', gr:'', w:'small', charNorm:'²', charShift:'~'},
+                {id:'Digit1', t:'1', m:'&', gr:'1', charNorm:'&', charShift:'1'},
+                {id:'Digit2', t:'2', m:'é', gr:'~', charNorm:'é', charShift:'2'},
+                {id:'Digit3', t:'3', m:'"', gr:'#', charNorm:'"', charShift:'3'},
+                {id:'Digit4', t:'4', m:"'", gr:'{', charNorm:"'", charShift:'4'},
+                {id:'Digit5', t:'5', m:'(', gr:'[', charNorm:'(', charShift:'5'},
+                {id:'Digit6', t:'6', m:'-', gr:'|', charNorm:'-', charShift:'6'},
+                {id:'Digit7', t:'7', m:'è', gr:'`', charNorm:'è', charShift:'7'},
+                {id:'Digit8', t:'8', m:'_', gr:'\\', charNorm:'_', charShift:'8'},
+                {id:'Digit9', t:'9', m:'ç', gr:'^', charNorm:'ç', charShift:'9'},
+                {id:'Digit0', t:'0', m:'à', gr:'@', charNorm:'à', charShift:'0'},
+                {id:'Minus', t:'°', m:')', gr:']', charNorm:')', charShift:'°'},
+                {id:'Equal', t:'+', m:'=', gr:'}', charNorm:'=', charShift:'+'},
+                {id:'Backspace', m:'← Effacer', w:'wide'}
+            ],
+            [
+                {id:'Tab', m:'↹ Tab', w:'wide'},
+                {id:'KeyQ', m:'A', charNorm:'a', charShift:'A'}, 
+                {id:'KeyW', m:'Z', charNorm:'z', charShift:'Z'}, 
+                {id:'KeyE', m:'E', gr:'€', charNorm:'e', charShift:'E'}, 
+                {id:'KeyR', m:'R', charNorm:'r', charShift:'R'}, 
+                {id:'KeyT', m:'T', charNorm:'t', charShift:'T'},
+                {id:'KeyY', m:'Y', charNorm:'y', charShift:'Y'}, 
+                {id:'KeyU', m:'U', charNorm:'u', charShift:'U'}, 
+                {id:'KeyI', m:'I', charNorm:'i', charShift:'I'}, 
+                {id:'KeyO', m:'O', charNorm:'o', charShift:'O'}, 
+                {id:'KeyP', m:'P', charNorm:'p', charShift:'P'},
+                {id:'BracketLeft', t:'¨', m:'^', charNorm:'^', charShift:'¨'},
+                {id:'BracketRight', t:'£', m:'$', gr:'¤', charNorm:'$', charShift:'£'},
+                {id:'Enter', m:'↵ Entrée', w:'wide'}
+            ],
+            [
+                {id:'CapsLock', m:'⇪ Verr Maj', w:'wide'},
+                {id:'KeyA', m:'Q', charNorm:'q', charShift:'Q'}, 
+                {id:'KeyS', m:'S', charNorm:'s', charShift:'S'}, 
+                {id:'KeyD', m:'D', charNorm:'d', charShift:'D'}, 
+                {id:'KeyF', m:'F', charNorm:'f', charShift:'F'}, 
+                {id:'KeyG', m:'G', charNorm:'g', charShift:'G'},
+                {id:'KeyH', m:'H', charNorm:'h', charShift:'H'}, 
+                {id:'KeyJ', m:'J', charNorm:'j', charShift:'J'}, 
+                {id:'KeyK', m:'K', charNorm:'k', charShift:'K'}, 
+                {id:'KeyL', m:'L', charNorm:'l', charShift:'L'}, 
+                {id:'Semicolon', m:'M', charNorm:'m', charShift:'M'},
+                {id:'Quote', t:'%', m:'ù', charNorm:'ù', charShift:'%'},
+                {id:'Backslash', t:'µ', m:'*', charNorm:'*', charShift:'µ'},
+                {id:'Insert', m:'Inser', w:'small'}
+            ],
+            [
+                {id:'ShiftLeft', m:'⇧ MAJ', w:'wide'},
+                {id:'IntlBackslash', t:'>', m:'<', charNorm:'<', charShift:'>'},
+                {id:'KeyZ', m:'W', charNorm:'w', charShift:'W'}, 
+                {id:'KeyX', m:'X', charNorm:'x', charShift:'X'}, 
+                {id:'KeyC', m:'C', charNorm:'c', charShift:'C'}, 
+                {id:'KeyV', m:'V', charNorm:'v', charShift:'V'}, 
+                {id:'KeyB', m:'B', charNorm:'b', charShift:'B'},
+                {id:'KeyN', m:'N', charNorm:'n', charShift:'N'}, 
+                {id:'KeyM', t:'?', m:',', charNorm:',', charShift:'?'},
+                {id:'Comma', t:'.', m:';', charNorm:';', charShift:'.'},
+                {id:'Period', t:'/', m:':', charNorm:':', charShift:'/'},
+                {id:'Slash', t:'§', m:'!', charNorm:'!', charShift:'§'},
+                {id:'ShiftRight', m:'⇧ MAJ', w:'wide'}
+            ],
+            [
+                {id:'ControlLeft', m:'CTRL'},
+                {id:'Fn', m:'FN'},
+                {id:'MetaLeft', m:'WIN'},
+                {id:'AltLeft', m:'ALT'},
+                {id:'Space', m:'Espace', w:'space', charNorm:' ', charShift:' '},
+                {id:'AltRight', m:'ALT GR'},
+                {id:'MetaRight', m:'WIN'},
+                {id:'ContextMenu', m:'MENU'},
+                {id:'ControlRight', m:'CTRL'}
+            ]
+        ];
+
+        // Corriger la virgule/point dans layout
+        kbLayout[4][10] = {id:'Period', t:'/', m:':', charNorm:':', charShift:'/'};
+
+        // État de l'exercice
+        let currentWeek = "1";
+        let currentWordList = [];
+        let wordIndex = 0;
+        let currentWord = "";
+        let charIndex = 0;
+        let score = 0;
+
+        // Audio Synth
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(freq = 440, type = 'sine', duration = 0.08) {
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playSuccessSound() {
+            playSound(523.25, 'sine', 0.1);
+            setTimeout(() => playSound(659.25, 'sine', 0.1), 100);
+            setTimeout(() => playSound(783.99, 'sine', 0.2), 200);
+        }
+
+        // Rendu du Clavier
+        function renderKeyboard() {
+            const kb = document.getElementById('keyboard');
+            kb.innerHTML = '';
+            kbLayout.forEach(row => {
+                const rowEl = document.createElement('div');
+                rowEl.className = 'key-row';
+                row.forEach(k => {
+                    const el = document.createElement('div');
+                    el.id = k.id;
+                    el.className = `key ${k.w || ''}`;
+                    
+                    if (k.t) el.innerHTML += `<span class="key-top">${k.t}</span>`;
+                    if (k.gr) el.innerHTML += `<span class="key-gr">${k.gr}</span>`;
+                    el.innerHTML += `<span class="key-main">${k.m}</span>`;
+                    
+                    // Supression du clic / tap tactile pour forcer l'utilisation du clavier physique
+                    // Les touches ne réagissent plus au clic de la souris
+                    
+                    rowEl.appendChild(el);
+                });
+                kb.appendChild(rowEl);
+            });
+        }
+
+        // Charger une liste de mots
+        function loadWeekList(week) {
+            currentWeek = week;
+            currentWordList = [...wordsByWeek[week]];
+            // Mélanger les mots
+            currentWordList.sort(() => Math.random() - 0.5);
+            wordIndex = 0;
+            loadNextWord();
+        }
+
+        // Charger le mot suivant
+        function loadNextWord() {
+            if (wordIndex >= currentWordList.length) {
+                // Mélanger à nouveau
+                currentWordList.sort(() => Math.random() - 0.5);
+                wordIndex = 0;
+            }
+            currentWord = currentWordList[wordIndex];
+            charIndex = 0;
+            window.pendingAccent = null;
+            updateWordDisplay();
+            highlightTargetKey();
+        }
+
+        // Mettre à jour la zone d'affichage
+        function updateWordDisplay() {
+            const display = document.getElementById('target-display');
+            display.innerHTML = '';
+            
+            for (let i = 0; i < currentWord.length; i++) {
+                const span = document.createElement('span');
+                span.className = 'char-letter';
+                
+                // Remplacer les espaces par un symbole plus visible
+                let charToShow = currentWord[i];
+                if (charToShow === ' ') charToShow = '␣';
+
+                span.textContent = charToShow;
+
+                if (i < charIndex) {
+                    span.classList.add('char-typed');
+                } else if (i === charIndex) {
+                    span.classList.add('char-current');
+                }
+
+                display.appendChild(span);
+            }
+        }
+
+        // Traitement de la touche tapée
+        function processInput(char) {
+            if (charIndex >= currentWord.length) return;
+
+            let expectedChar = currentWord[charIndex];
+
+            // Si un accent était déjà pressé au clavier physique (ex: ^)
+            if (window.pendingAccent) {
+                if (window.pendingAccent === '^') {
+                    const circumflexMap = {'a':'â', 'e':'ê', 'i':'î', 'o':'ô', 'u':'û', 'A':'Â', 'E':'Ê', 'I':'Î', 'O':'Ô', 'U':'Û'};
+                    if (circumflexMap[char]) char = circumflexMap[char];
+                } else if (window.pendingAccent === '¨') {
+                    const tremaMap = {'e':'ë', 'i':'ï', 'u':'ü', 'E':'Ë', 'I':'Ï', 'U':'Ü'};
+                    if (tremaMap[char]) char = tremaMap[char];
+                }
+                window.pendingAccent = null;
+            } else if (char === '^' || char === 'Dead') {
+                // Touche accent circonflexe pressée sur le clavier physique
+                window.pendingAccent = '^';
+                playSound(400, 'sine', 0.05);
+                // Éteindre immédiatement le chapeau et allumer la lettre
+                highlightTargetKey();
+                return;
+            }
+
+            if (char === expectedChar) {
+                // Correct !
+                playSound(587.33, 'sine', 0.08); // Note aigue
+                charIndex++;
+                updateWordDisplay();
+
+                if (charIndex >= currentWord.length) {
+                    // Mot complété !
+                    score++;
+                    document.getElementById('score-count').textContent = score;
+                    document.getElementById('feedback').textContent = "Bravo ! Mot réussi ! 🎉";
+                    playSuccessSound();
+                    
+                    setTimeout(() => {
+                        document.getElementById('feedback').textContent = "Regarde les touches illuminées !";
+                        wordIndex++;
+                        loadNextWord();
+                    }, 1000);
+                } else {
+                    highlightTargetKey();
+                }
+            } else {
+                // Erreur
+                playSound(150, 'sawtooth', 0.15);
+                document.getElementById('feedback').textContent = "Oups ! Essaie encore !";
+                // En cas d'erreur lors d'une combinaison d'accent, réinitialiser
+                window.pendingAccent = null;
+                highlightTargetKey();
+            }
+        }
+
+        // Mettre en surbrillance la touche à taper
+        function highlightTargetKey() {
+            // Nettoyer surbrillances précédentes
+            document.querySelectorAll('.key').forEach(el => {
+                el.classList.remove('key-target', 'key-shift-required');
+            });
+
+            if (charIndex >= currentWord.length) return;
+
+            let targetChar = currentWord[charIndex];
+
+            // Décomposer les voyelles accentuées avec accent circonflexe ou tréma
+            const mapCircumflex = {'â':'a', 'ê':'e', 'î':'i', 'ô':'o', 'û':'u', 'Â':'A', 'Ê':'E', 'Î':'I', 'Ô':'O', 'Û':'U'};
+            const mapTrema = {'ë':'e', 'ï':'i', 'ü':'u', 'Ë':'E', 'Ï':'I', 'Ü':'U'};
+
+            if (mapCircumflex[targetChar]) {
+                if (!window.pendingAccent) {
+                    // Étape 1 : Allumer d'abord la touche du chapeau ^
+                    targetChar = '^';
+                } else {
+                    // Étape 2 : L'accent a été tapé, allumer maintenant la lettre (ex: e)
+                    targetChar = mapCircumflex[targetChar];
+                }
+            } else if (mapTrema[targetChar]) {
+                if (!window.pendingAccent) {
+                    targetChar = '¨';
+                } else {
+                    targetChar = mapTrema[targetChar];
+                }
+            }
+
+            let foundKey = null;
+            let needsShift = false;
+
+            // Rechercher dans le layout de clavier
+            for (let row of kbLayout) {
+                for (let k of row) {
+                    if (k.charNorm === targetChar) {
+                        foundKey = k;
+                        needsShift = false;
+                        break;
+                    } else if (k.charShift === targetChar) {
+                        foundKey = k;
+                        needsShift = true;
+                        break;
+                    }
+                }
+                if (foundKey) break;
+            }
+
+            if (foundKey) {
+                const keyEl = document.getElementById(foundKey.id);
+                if (keyEl) keyEl.classList.add('key-target');
+
+                if (needsShift) {
+                    const shiftKey = document.getElementById('ShiftLeft');
+                    if (shiftKey) shiftKey.classList.add('key-shift-required');
+                }
+            }
+        }
+
+        // Événements Clavier Physique
+        window.addEventListener('keydown', (e) => {
+            if (e.repeat) return;
+
+            // Gestion spéciale de l'accent circonflexe physique
+            if (e.key === '^' || e.key === 'Dead') {
+                const keyEl = document.getElementById('BracketLeft');
+                if (keyEl) {
+                    keyEl.classList.add('key-pressed');
+                    setTimeout(() => keyEl.classList.remove('key-pressed'), 150);
+                }
+                processInput('^');
+                return;
+            }
+
+            const keyEl = document.getElementById(e.code);
+            if (keyEl) {
+                keyEl.classList.add('key-pressed');
+            }
+
+            if (e.key.length === 1) {
+                processInput(e.key);
+            } else if (e.code === 'Space') {
+                processInput(' ');
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === '^' || e.key === 'Dead') return;
+            const keyEl = document.getElementById(e.code);
+            if (keyEl) {
+                keyEl.classList.remove('key-pressed');
+            }
+        });
+
+        // Animation Fond Étoilé
+        function initStarfield() {
+            const canvas = document.getElementById('starfield');
+            const ctx = canvas.getContext('2d');
+            let stars = [];
+            const numStars = 100;
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            for (let i = 0; i < numStars; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2,
+                    speed: Math.random() * 0.4 + 0.1
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#ffffff';
+                stars.forEach(s => {
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    s.y += s.speed;
+                    if (s.y > canvas.height) {
+                        s.y = -5;
+                        s.x = Math.random() * canvas.width;
+                    }
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // Initialisation globale
+        window.onload = () => {
+            renderKeyboard();
+            initStarfield();
+
+            // Gestion du choix de semaine
+            const weekSelect = document.getElementById('week-select');
+            weekSelect.addEventListener('change', (e) => {
+                loadWeekList(e.target.value);
+            });
+
+            // Bouton passer
+            document.getElementById('skip-btn').addEventListener('click', () => {
+                wordIndex++;
+                loadNextWord();
+            });
+
+            // Charger la semaine 1 par défaut
+            loadWeekList("1");
+        };
+    </script>
+</body>
+</html>
